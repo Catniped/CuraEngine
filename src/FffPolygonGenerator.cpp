@@ -6,6 +6,8 @@
 #include <fstream> // ifstream.good()
 #include <map> // multimap (ordered map allowing duplicate keys)
 #include <numeric>
+#include <iostream>
+#include <string> 
 
 #include <spdlog/spdlog.h>
 
@@ -55,7 +57,7 @@
 namespace cura
 {
 
-
+#include <iostream>
 bool FffPolygonGenerator::generateAreas(SliceDataStorage& storage, MeshGroup* meshgroup, TimeKeeper& timeKeeper)
 {
     if (! sliceModel(meshgroup, timeKeeper, storage))
@@ -63,7 +65,26 @@ bool FffPolygonGenerator::generateAreas(SliceDataStorage& storage, MeshGroup* me
         return false;
     }
 
-    slices2polygons(storage, timeKeeper);
+    for (std::shared_ptr<SliceMeshStorage>& mesh_ptr : storage.meshes)
+    {
+        auto& mesh = *mesh_ptr;
+        for (SliceLayer& layer : mesh.layers)
+        {
+            std::cout << "nl" << std::endl;
+            for (SliceLayerPart& layerPart : layer.parts)
+            {
+                std::cout << "np" << std::endl;
+                for (ClipperLib::Path& path : layerPart.outline)
+                {  
+                    for (ClipperLib::IntPoint& point : path)
+                    {  
+                        std::cout << (std::to_string(point.X) + " " + std::to_string(point.Y)) << std::endl;
+                    }
+                }
+            }
+        }
+    }
+    // slices2polygons(storage, timeKeeper);
 
     return true;
 }
