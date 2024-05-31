@@ -1,17 +1,24 @@
 import subprocess
 from PIL import Image
-from bresenham import bresenham
+import skimage
+import sys
 
 layers = []
 l_buf = []
-p_buf = []
+x_buf = []
+y_buf = []
+xh = None
+yh = None
+scale = int(sys.argv[2])
 
 
 """get output"""
 try:
-    output = subprocess.check_output("./build/Release/CuraEngine slice -v -j /home/catniped/Downloads/fdmprinter.def.json -s extruder_nr=1 -l /home/catniped/Downloads/stlp_bludisko.stl", shell=True)
+    output = subprocess.check_output(f"./build/Release/CuraEngine slice -v -j /home/catniped/Downloads/fdmprinter.def.json -s extruder_nr=1 -l /home/catniped/Downloads/{sys.argv[1]}", shell=True)
 except subprocess.CalledProcessError as e:
     output = e.output
+except:
+    pass
 
 for line in output.decode().split("\n"):
     if line:
@@ -19,48 +26,30 @@ for line in output.decode().split("\n"):
             layers.append(l_buf)
             l_buf = []
         if line == "np":
-            l_buf.append(p_buf)
-            p_buf = []
+            l_buf.append(x_buf)
+            l_buf.append(y_buf)
+            x_buf = []
+            y_buf = []
         if line[0].isnumeric():
             x,y = line.split(" ")
-            p_buf.append([int(int(x)/50),int(int(y)/50)])
+            x2 = int(int(x)/scale)
+            y2 = int(int(y)/scale)
+            if not xh: xh = x2
+            if not yh: yh = y2
+            if x2 < xh: xh = x2
+            if y2 < yh: yh = y2
+            x_buf.append(x2)
+            y_buf.append(y2)
+
  
 img = Image.new( 'RGB', (2100,2100), "white")
 pixels = img.load()
 
-"""draw lines"""
-for part in layers[2]:
-    for i in range(len(part)):
-        if i < len(part)-1:
-            x1 = part[i][0]
-            y1 = part[i][1]
-            x2 = part[i+1][0]
-            y2 = part[i+1][1]
+for i in range(0, len(layers[2])-1, 2):
+    xx,yy = skimage.draw.polygon(layers[2][i],layers[2][i+1])
 
-            for x,y in bresenham(x1,y1,x2,y2):
-                pixels[int(x),int(y)] = (int(x),int(y),0)
+    for x,y in zip(xx,yy):
+        pixels[x-xh,y-yh] = (0,0,0)
 
-        else:
-            x1 = part[i][0]
-            y1 = part[i][1]
-            x2 = part[0][0]
-            y2 = part[0][1]
-
-            for x,y in bresenham(x1,y1,x2,y2):
-                pixels[int(x),int(y)] = (int(x),int(y),0)
-
-v_buf = ()
-
-"""fill polygons"""
-for y0 in range(2100):
-    for x0 in range(2100):
-        if pixels[x0,y0] != (255,255,255):
-            if v_buf:
-                for x in range(v_buf[0],x0):
-                    pixels[x,y0] = (x,y0,0)
-                v_buf = ()
-            else:
-                v_buf = (x0,y0)
-    v_buf = ()
-
+print(xh,yh)
 img.show()
