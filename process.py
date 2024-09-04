@@ -11,6 +11,7 @@ xh = None
 yh = None
 scale = int(sys.argv[2])
 
+print("Starting slice.")
 
 """get output"""
 try:
@@ -41,15 +42,19 @@ for line in output.decode().split("\n"):
             x_buf.append(x2)
             y_buf.append(y2)
 
- 
-img = Image.new( 'RGB', (2100,2100), "white")
-pixels = img.load()
+print(f"Object contains {len(layers)} layers.")
+for p in range(len(layers)):
+    try:
+        img = Image.new( '1', (2100,2100), "white")
+        pixels = img.load()
 
-for i in range(0, len(layers[2])-1, 2):
-    xx,yy = skimage.draw.polygon(layers[2][i],layers[2][i+1])
+        for i in range(0, len(layers[p])-1, 2):
+            xx,yy = skimage.draw.polygon(layers[p][i],layers[p][i+1])
 
-    for x,y in zip(xx,yy):
-        pixels[x-xh,y-yh] = (0,0,0)
+            for x,y in zip(xx,yy):
+                pixels[x-xh,y-yh] = 0
 
-print(xh,yh)
-img.show()
+        img.save(f"./output/layer{p}.bmp")
+    except Exception as e:
+        print(f"Exception at layer {p}: {e}")
+
